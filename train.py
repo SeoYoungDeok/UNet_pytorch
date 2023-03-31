@@ -1,5 +1,6 @@
 import yaml
 import torch
+from torch.nn.functional import one_hot
 import os
 from tqdm import tqdm
 from data_loader.data_loader import get_dataloader
@@ -31,20 +32,20 @@ def main(config):
             for imgs, labels in pbar:
                 imgs = imgs.to(device)
                 labels = labels.to(device=device, dtype=torch.int64)
+                labels = one_hot(labels, 21).permute(0, 3, 1, 2).to(dtype=torch.float64)
 
                 optimizer.zero_grad()
 
                 pred = model(imgs)
                 _, pred_idx = torch.max(pred, dim=1)
+                _, label_idx = torch.max(labels, dim=1)
                 loss = loss_fn(pred, labels)
 
                 loss.backward()
                 optimizer.step()
 
                 sum_loss += loss.item()
-                sum_acc += (
-                    torch.sum(pred_idx == labels.data).item() / imgs.size(-1) ** 2
-                )
+                sum_acc += torch.sum(pred_idx == label_idx).item() / imgs.size(-1) ** 2
                 sum_len += imgs.size(0)
 
                 pbar.set_postfix(
@@ -62,14 +63,18 @@ def main(config):
                 for imgs, labels in pbar:
                     imgs = imgs.to(device)
                     labels = labels.to(device=device, dtype=torch.int64)
+                    labels = (
+                        one_hot(labels, 21).permute(0, 3, 1, 2).to(dtype=torch.float64)
+                    )
 
                     pred = model(imgs)
                     _, pred_idx = torch.max(pred, dim=1)
+                    _, label_idx = torch.max(labels, dim=1)
                     loss = loss_fn(pred, labels)
 
                     sum_loss += loss.item()
                     sum_acc += (
-                        torch.sum(pred_idx == labels.data).item() / imgs.size(-1) ** 2
+                        torch.sum(pred_idx == label_idx).item() / imgs.size(-1) ** 2
                     )
                     sum_len += imgs.size(0)
 

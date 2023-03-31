@@ -22,11 +22,7 @@ class UNet(Module):
         self.up_sample4 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
         self.up_stage4 = self._conv_layer(128, 64)
 
-        self.out_layer = nn.Sequential(
-            nn.Conv2d(64, class_num, kernel_size=1),
-            nn.BatchNorm2d(class_num),
-            nn.ReLU(),
-        )
+        self.out_layer = nn.Conv2d(64, class_num, kernel_size=1)
 
     def forward(self, x):
         down_feature1 = self.down_stage1(x)

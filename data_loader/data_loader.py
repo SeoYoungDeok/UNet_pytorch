@@ -10,7 +10,7 @@ class CustomVOCSegmentation(VOCSegmentation):
     def __getitem__(self, idx):
         img = np.array(Image.open(self.images[idx]).convert("RGB"))
         mask = np.array(Image.open(self.masks[idx]))
-        mask[mask >= 21] = 0
+        mask[mask > 20] = 0
 
         if self.transform != None:
             aug = self.transform(image=img, mask=mask)
