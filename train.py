@@ -40,9 +40,9 @@ def main(config):
                 loss = loss_fn(pred, labels)
 
                 pred_idx = torch.argmax(pred, dim=1)
-                print(torch.unique(pred_idx[0], return_counts=True))
+                # print(torch.unique(pred_idx[0], return_counts=True))
                 label_idx = torch.argmax(labels, dim=1)
-                print(torch.unique(label_idx[0], return_counts=True))
+                # print(torch.unique(label_idx[0], return_counts=True))
 
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
