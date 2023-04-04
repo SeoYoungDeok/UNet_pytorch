@@ -5,7 +5,6 @@ import os
 from tqdm import tqdm
 from data_loader.data_loader import get_dataloader
 import model.model as module_model
-import loss.loss as module_loss
 
 
 def main(config):
@@ -18,11 +17,11 @@ def main(config):
     )
     model = getattr(module_model, config["model"])(21).to(device)
 
-    loss_fn = getattr(module_loss, config["loss"])
+    loss_fn = getattr(torch.nn, config["loss"])()
     optimizer = getattr(torch.optim, config["optimizer"])(
         model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"]
     )
-
+    # training loop
     for epoch in range(epochs):
         with tqdm(train_loader) as pbar:
             pbar.set_description(f"Epoch : {epoch}")
@@ -30,18 +29,23 @@ def main(config):
             sum_acc = 0
             sum_len = 0
             for imgs, labels in pbar:
-                imgs = imgs.to(device)
-                labels = labels.to(device=device, dtype=torch.int64)
-                labels = one_hot(labels, 21).permute(0, 3, 1, 2).to(dtype=torch.float64)
+                imgs = imgs.to(device)  # B C W H
+                labels = labels.to(device=device, dtype=torch.int64)  # B W H
+                # B W H V -> B V W H
+                labels = one_hot(labels, 21).permute(0, 3, 1, 2).to(dtype=torch.float32)
 
                 optimizer.zero_grad()
 
-                pred = model(imgs)
-                _, pred_idx = torch.max(pred, dim=1)
-                _, label_idx = torch.max(labels, dim=1)
+                pred = model(imgs)  # B C W H
                 loss = loss_fn(pred, labels)
 
+                pred_idx = torch.argmax(pred, dim=1)
+                print(torch.unique(pred_idx[0], return_counts=True))
+                label_idx = torch.argmax(labels, dim=1)
+                print(torch.unique(label_idx[0], return_counts=True))
+
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 optimizer.step()
 
                 sum_loss += loss.item()
@@ -64,13 +68,14 @@ def main(config):
                     imgs = imgs.to(device)
                     labels = labels.to(device=device, dtype=torch.int64)
                     labels = (
-                        one_hot(labels, 21).permute(0, 3, 1, 2).to(dtype=torch.float64)
+                        one_hot(labels, 21).permute(0, 3, 1, 2).to(dtype=torch.float32)
                     )
 
                     pred = model(imgs)
-                    _, pred_idx = torch.max(pred, dim=1)
-                    _, label_idx = torch.max(labels, dim=1)
                     loss = loss_fn(pred, labels)
+
+                    pred_idx = torch.argmax(pred, dim=1)
+                    label_idx = torch.argmax(labels, dim=1)
 
                     sum_loss += loss.item()
                     sum_acc += (

@@ -1,11 +1,11 @@
 model: 'UNet'
 
-loss: 'binary_cross_entropy_with_logits'
+loss: 'BCEWithLogitsLoss'
 
 optimizer: 'Adam'
 
 epoch: 31
 lr: 0.0001
-weight_decay: 0.00001
+weight_decay: 0.000001
 batch_size: 4
 data_path: 'data'

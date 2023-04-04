@@ -14,19 +14,34 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 model = UNet(21).to(device)
 
-# model.load_state_dict(torch.load("check_point/model_20.pth"))
+model.load_state_dict(torch.load("check_point/model_0.pth"))
 model.eval()
 
-train_loader, test_loader = get_dataloader("data", 2)
+train_loader, test_loader = get_dataloader("data", 1)
+# %%
+
+for module in model.named_modules():
+    print(module)
+    print("-----------")
 
 # %%
-img, masks = next(iter(test_loader))
+count = torch.zeros(21, dtype=torch.int64)
+print(count)
 
+for img, label in iter(train_loader):
+    idx, c = torch.unique(label, return_counts=True)
+    for i, n in zip(idx, c):
+        count[int(i)] += n
+
+print(count.shape)
+print(count)
+print(count.sum() / count)
 # %%
+img, masks = next(iter(train_loader))
+
 print(img.shape)
 print(masks.shape)
 # print(masks[0].long().dtype)
-# %%
 
 
 def inverse_norm(img):
@@ -45,10 +60,18 @@ mask = masks[0].numpy()
 
 # %%
 pred = model(img.to(device))
-_, pred_idx = torch.max(pred, dim=1)
+pred_idx = torch.argmax(pred, dim=1)
+print(torch.unique(pred_idx[0], return_counts=True))
 
-# %%
+print(np.unique(mask))
+print(mask.shape)
+
 fig, ax = plt.subplots(figsize=(6, 12), nrows=1, ncols=3)
+
+for a in ax:
+    a.get_xaxis().set_visible(False)
+    a.get_yaxis().set_visible(False)
+
 ax[0].imshow(image)
 ax[1].imshow(mask)
 ax[2].imshow(pred_idx[0].detach().cpu().numpy())
@@ -91,7 +114,11 @@ print(out)
 from torch.nn.functional import one_hot
 import torch
 
-x = torch.tensor([[1, 2, 3], [1, 2, 3]], dtype=torch.int64)
+x = torch.tensor(
+    [[[0, 0, 0], [0, 3, 0], [0, 0, 0]], [[0, 0, 0], [0, 2, 0], [0, 0, 0]]],
+    dtype=torch.int64,
+)
 
 print(x.shape)
-print(one_hot(x, 21).shape)
+print(one_hot(x, 5).shape)
+print(one_hot(x, 5).permute(0, 3, 1, 2))
